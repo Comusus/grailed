@@ -1,17 +1,18 @@
 # resolveCollisions.py: Methods for resolving duplicate username collisions.
 
-from db import connectDB, createParser
-import argparse
+from utils import connectDB, createParser
 
-def getUsernames():
-    """ Get all of the usernames from the Database.
+def getUsernames(conn):
+    """ Get all of the usernames from the Database split into unique
+        usernames and duplicate usernames.
+
+        Args:
+            - conn: sqlite3.Connection object 
 
         Returns:
-            unique - Hashset of all unique usernames.
-            duplicates - Hashmap where key is duplicate and val is a counter
-
+            - unique: Hashset of all unique usernames.
+            - duplicates: Hashmap where key is a duplicate and val is a counter
     """
-    conn = connectDB()
     c = conn.cursor()
 
     unique = set([])
@@ -29,21 +30,19 @@ def getUsernames():
             unique.add(username)
 
     c.close()
-    conn.close()
-
     return unique, duplicates
 
 
 def updateName(s, iD, newName):
-    """ Update the username column in the row in the Users Table.
+    """ Update the username column in the row of the userID 
+        in the Users Table.
 
-        Inputs:
-            s - Cursor Class 
-            iD - Integer of user ID 
-            newName - String of New Name
-
+        Args:
+            - s: Cursor Object to move through DB 
+            - iD: Integer of user ID 
+            - newName: String of New Name
     """
-    query = '''UPDATE users SET username=? WHERE id=?'''
+    query = ''' UPDATE USERS SET username=? WHERE id=? '''
     s.execute(query, (newName, iD))
 
 def resolveUsernameCollisions(dry_run = False):
@@ -51,61 +50,58 @@ def resolveUsernameCollisions(dry_run = False):
         If ran in dry_run mode then prints out all changes in alphabetic
         and id order.
 
-        Inputs:
+        Args:
             - dry_run: Boolean for Dry Run Mode
     """
     conn = connectDB()
     c = conn.cursor()
     s = conn.cursor()
 
-    unique, duplicates = getUsernames()
+    unique, duplicates = getUsernames(conn)
 
-    query = '''SELECT users.id, users.username
-               FROM  USERS
-               JOIN ( SELECT username, COUNT(username) 
-                      FROM users
-                      GROUP BY username
-                      HAVING COUNT(username) > 1
-                    ) as duplicates
-               WHERE users.username = duplicates.username
+    query = ''' SELECT USERS.id, USERS.username
+                FROM  USERS
+                JOIN ( SELECT username, COUNT(username) 
+                       FROM USERS
+                       GROUP BY username
+                       HAVING COUNT(username) > 1
+                     ) as duplicates
+                WHERE USERS.username = duplicates.username
             '''
 
     for row in c.execute(query):
-        counter = duplicates[row[1]]
+        iD, name = row[0], row[1]
+        counter = duplicates[name]
         if counter > 0:
             # we have seen this duplicate before
-            newName = row[1] + str(counter)
+            newName = name + str(counter)
             while newName in duplicates or newName in unique:
                 # check if the New Name would cause another collisions
                 counter += 1
-                newName = row[1] + str(counter)
+                newName = name + str(counter)
 
             if dry_run:
-                print(row[0], row[1] + " => " + newName)
+                print(iD, name + " => " + "[" + newName + "]")
             else:
-                updateName(s, row[0], newName)
+                updateName(s, iD, newName)
 
-            duplicates[row[1]] = counter + 1
+            duplicates[name] = counter + 1
 
         else:
             # we have seen this duplicate for the first time
             if dry_run:
-                print(row[0], row[1] + " => " + row[1])
+                print(iD, name + " => " + "[" + name + "]")
             
-            duplicates[row[1]] += 1
+            duplicates[name] += 1
 
-    conn.commit() #commit changes
+    conn.commit() # commit changes/updates to DB
 
     s.close()
     c.close()
     conn.close()
 
 if __name__ == "__main__":
-    # print(createParser())
-    # parser = argparse.ArgumentParser(description='Meep.')
-    # getUsernames2()
-    conn = connectDB()
-    s = conn.cursor()
-
-    # resolveUsernameCollisions()
-    # findDisallowedUsers()
+    parser = createParser()
+    args = parser.parse_args()
+    DRY_RUN = True if args.dry_run else False
+    resolveUsernameCollisions(DRY_RUN)

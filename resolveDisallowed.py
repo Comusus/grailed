@@ -1,11 +1,10 @@
-# resolveDisallowed.py: Methods to resolve usernames that are disallowed words. 
+# resolveDisallowed.py: Methods to resolve usernames that are disallowed. 
 
-from db import connectDB, createParser
+from utils import connectDB, createParser
 from resolveCollisions import updateName
 
-
 def getDisallowedNames(conn):
-	""" Returns a set of all illegitimate usernames.
+	""" Returns a set of all illegitimate disallowed usernames.
 
 		Args:
 			- conn: sqlite3.Connection object 
@@ -21,7 +20,7 @@ def getDisallowedNames(conn):
 	return disallowed
 
 def getAllowedNames(conn):
-	""" Returns a set of all legitimate usernames.
+	""" Returns a set of all legitimate allowed usernames.
 
 		Args:
 			- conn: sqlite3.Connection object 
@@ -45,31 +44,30 @@ def getAllowedNames(conn):
 
 def resolveDisallowedUsers(dry_run = False):
 	""" Changes usernames matching disallowed words (i.e. grailed, settings)
-		into new usernames.
+		into new usernames. 
 
 		Args:
 			- dry_run: Boolean for Dry Run Mode
 	"""
 	conn = connectDB()
 	c = conn.cursor()
+	s = conn.cursor()
 
 	query = ''' SELECT USERS.id, USERS.username
 			    FROM USERS
 			    JOIN DISALLOWED_USERNAMES
-			    WHERE users.username = disallowed_usernames.invalid_username
-			    ORDER BY users.id
+			    WHERE USERS.username = DISALLOWED_USERNAMES.invalid_username
+			    ORDER BY USERS.id
 			'''
 
 	disallowed = getDisallowedNames(conn) # prevents new name being disallowed.
 	allowed = getAllowedNames(conn) # prevents duplicate new names
 
-	print(disallowed, allowed)
 	duplicates = {} # hashmap to save time on duplicates
 
 	for row in c.execute(query): 
 		# Gets all rows from USERS Table with Disallowed usernames
 		iD, name = row[0], row[1]
-		
 		if name not in duplicates:
 			counter = 1
 		else:
@@ -87,10 +85,16 @@ def resolveDisallowedUsers(dry_run = False):
 		if dry_run:
 			print(iD, name + ' => ' + '[' + newName + ']')
 		else:
-			updateName(iD, newName)
+			updateName(s, iD, newName)
+
+	c.close()
+	s.close()
+	conn.commit()
+	conn.close()
 
 
 if __name__ == "__main__":
-	#TODO: create Parser
-	DRY_RUN = True
+	parser = createParser()
+	args = parser.parse_args()
+	DRY_RUN = True if args.dry_run else False
 	resolveDisallowedUsers(DRY_RUN)

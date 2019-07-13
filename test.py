@@ -3,7 +3,7 @@
 import sqlite3
 import unittest
 from shutil import copyfile
-from db import connectDB
+from utils import connectDB
 from resolveCollisions import *
 
 

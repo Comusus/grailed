@@ -1,6 +1,6 @@
 # findDisallowedUsers.py: Methods to find users with disallowed usernames
 
-from db import connectDB
+from utils import connectDB
 
 def findDisallowedUsers():
 	""" Finds all users with disallowed usernames and print them in
@@ -19,7 +19,7 @@ def findDisallowedUsers():
 			'''
 
 	for row in c.execute(query):
-		print(row[0], row[1])
+		print(row[0], row[1]) # prints id and name
 
 	c.close()
 	conn.close()

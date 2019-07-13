@@ -2,6 +2,7 @@
 
 import sqlite3
 import argparse
+from shutil import copyfile
 
 DB_NAME = 'grailed-exercise.sqlite3'
 DB_PATH = './database/' + DB_NAME
@@ -22,4 +23,17 @@ def createParser():
 	""" Create an argument parser that can run the functions
 	    in dry run mode
 	"""
-	return 2
+	parser = argparse.ArgumentParser(description="Clean Up Usernames")
+	parser.add_argument("-dry_run", action='store_true')
+	return parser
+	# parser.add_argument("-dry_run", action='store_true')
+
+
+def resetDB():
+	DB_NAME = 'grailed-exercise.sqlite3'
+	DB_PATH = './database/' + DB_NAME
+	DB_COPY_PATH = './database/original-grailed-exercise.sqlite3' 
+	copyfile(DB_COPY_PATH, DB_PATH)
+
+if __name__ == "__main__":
+	resetDB()

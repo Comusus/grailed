@@ -1,21 +1,24 @@
 # findDisallowedUsers.py: Methods to find users with disallowed usernames
 
-from utils import connectDB
+from utils import connectDB, getPath
 
-def findDisallowedUsers():
+def findDisallowedUsers(path):
 	""" Finds all users with disallowed usernames and print them in
 		format: {id} {name}. 
+
+		Args:
+			- path: String of Path to Database file
 
 		Returns:
 			None
 	"""
-	conn = connectDB()
+	conn = connectDB(path)
 	c = conn.cursor()
 	query = ''' SELECT USERS.id, USERS.username
 			    FROM USERS
 			    JOIN DISALLOWED_USERNAMES
-			    WHERE users.username = disallowed_usernames.invalid_username
-			    ORDER BY users.id 
+			    WHERE USERS.username = DISALLOWED_USERNAMES.invalid_username
+			    ORDER BY USERS.id 
 			'''
 
 	for row in c.execute(query):
@@ -24,5 +27,32 @@ def findDisallowedUsers():
 	c.close()
 	conn.close()
 
+
+def returnDisallowedUsers(path):
+	""" Returns all users with disallowed usernames as a list.
+
+		Args:
+			- path: String of Path to Database file
+
+		Returns:
+			- [row]: List of Tuples in form ({id}, {username})
+	"""
+	conn = connectDB(path)
+	c = conn.cursor()
+	query = ''' SELECT USERS.id, USERS.username
+			    FROM USERS
+			    JOIN DISALLOWED_USERNAMES
+			    WHERE USERS.username = DISALLOWED_USERNAMES.invalid_username
+			    ORDER BY USERS.id 
+			'''
+
+	c.execute(query)
+	row = c.fetchall() # List of Tuples ({id}, {username})
+	c.close()
+	conn.close()
+
+	return row
+	
+
 if __name__ == "__main__":
-	findDisallowedUsers()
+	findDisallowedUsers(getPath())

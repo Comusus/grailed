@@ -1,7 +1,6 @@
 # resolveDisallowed.py: Methods to resolve usernames that are disallowed. 
 
-from utils import connectDB, createParser
-from resolveCollisions import updateName
+from utils import connectDB, updateName, createParser, getPath
 
 def getDisallowedNames(conn):
 	""" Returns a set of all illegitimate disallowed usernames.
@@ -19,6 +18,7 @@ def getDisallowedNames(conn):
 
 	return disallowed
 
+
 def getAllowedNames(conn):
 	""" Returns a set of all legitimate allowed usernames.
 
@@ -27,12 +27,12 @@ def getAllowedNames(conn):
 	"""
 	c = conn.cursor()
 
-	query = ''' SELECT users.username
+	query = ''' SELECT USERS.username
 				FROM USERS
-				LEFT OUTER JOIN disallowed_usernames
-				ON users.username = disallowed_usernames.invalid_username
-				WHERE disallowed_usernames.invalid_username IS NULL
-				ORDER BY users.username
+				LEFT OUTER JOIN DISALLOWED_USERNAMES
+				ON USERS.username = DISALLOWED_USERNAMES.invalid_username
+				WHERE DISALLOWED_USERNAMES.invalid_username IS NULL
+				ORDER BY USERS.username
 			'''
 
 	usernames = set([])
@@ -42,14 +42,17 @@ def getAllowedNames(conn):
 
 	return usernames
 
-def resolveDisallowedUsers(dry_run = False):
-	""" Changes usernames matching disallowed words (i.e. grailed, settings)
-		into new usernames. 
 
+def resolveDisallowedUsers(path, dry_run = False):
+	""" Changes usernames matching disallowed words (i.e. grailed, settings)
+		into new usernames. New Usernames will not be duplicates or disallowed.
+		Dry Run Mode prints out all changes and does not commit them to the DB.
+	
 		Args:
-			- dry_run: Boolean for Dry Run Mode
+			- path: String of Path to Database file
+			- dry_run: Boolean for Dry Run Mode 
 	"""
-	conn = connectDB()
+	conn = connectDB(path)
 	c = conn.cursor()
 	s = conn.cursor()
 
@@ -57,8 +60,9 @@ def resolveDisallowedUsers(dry_run = False):
 			    FROM USERS
 			    JOIN DISALLOWED_USERNAMES
 			    WHERE USERS.username = DISALLOWED_USERNAMES.invalid_username
-			    ORDER BY USERS.id
+			    ORDER BY USERS.username
 			'''
+	# change query to ORDER BY USERS.id for in order
 
 	disallowed = getDisallowedNames(conn) # prevents new name being disallowed.
 	allowed = getAllowedNames(conn) # prevents duplicate new names
@@ -97,4 +101,4 @@ if __name__ == "__main__":
 	parser = createParser()
 	args = parser.parse_args()
 	DRY_RUN = True if args.dry_run else False
-	resolveDisallowedUsers(DRY_RUN)
+	resolveDisallowedUsers(getPath(), DRY_RUN)

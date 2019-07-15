@@ -9,7 +9,7 @@ experience with SQL and I have used sqlite before for a project.
 I've used Python 3.6.5 to test my code, but any version of Python 3.x should work.
 
 All of the packages I used are built-in but include:
-`sqlite3`, 'argparse', and 'shutil'.
+`sqlite3`, `argparse`, and `shutil`.
 
 You can run the code using the command line:
 
@@ -74,11 +74,11 @@ added extra complexity to the time since we would have to scan all of the
 strings.
 
 The way I decided to go with was an intermediate such that all duplicates get a number appended to them and the collisions between the same usernames have a counter. For example,
-'foo','foo','foo' --> 'foo','foo1','foo2' but 'foo100' and 'foo100' --> 'foo100','foo1001','foo1002'.
+`'foo','foo','foo' --> 'foo','foo1','foo2'` but `'foo100' and 'foo100' --> 'foo100','foo1001','foo1002'`.
 To make this process faster, I included a hashmap for each duplicate with a counter
 so we would avoid considering earlier numbers already used to fix duplicates. To be fair
 to the users, I also thought of when the user created their account (earlier ID name) so
-that cases like 'foo','foo','foo1' --> 'foo', 'foo2','foo1'. 
+that cases like `'foo','foo','foo1' --> 'foo', 'foo2','foo1'`. 
 
 To add onto the specifications and scope, (although the disallowed names table would probably
 not be updated too much or include words with numbers attached to them), I also considered the case where resolving the collisions could lead to the creation of new usernames that could
@@ -86,6 +86,8 @@ be disallowed or further collisions. I also wanted to prevent resolving disallow
 since any of these cases could create extra calls or loops to update the Database.
 Therefore, I wanted one call of each to be enough to fix the entire database. To do this,
 I created methods that would gather the set of disallowed names, set of allowed names, set of duplicates, set of unique names, or whatever information was necessary. 
+
+Therefore, `foo, foo, foo1` with disallowed `foo` would be `foo2, foo3, foo1`.
 
 Also, I assumed that all the usernames in the database would work as pretty URLs (i.e. there were no spaces in the username string).
 
